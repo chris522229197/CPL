@@ -140,3 +140,6 @@ configs/
 *.npy
 *.checkpoint
 */temp/*
+
+# IDE
+.idea/*
