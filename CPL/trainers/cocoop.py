@@ -280,7 +280,7 @@ class CoCoOp(TrainerX):
         device_count = torch.cuda.device_count()
         if device_count > 1:
             print(f"Multiple GPUs detected (n_gpus={device_count}), at least 4 GPUs are needed, use all of them!")
-            assert device_count == 4
+            assert device_count >= 4
             self.model = nn.DataParallel(self.model)
 
     def forward_backward(self, batch):
