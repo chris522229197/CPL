@@ -132,7 +132,6 @@ dmypy.json
 output/
 */output/
 debug.sh
-configs/
 *.sh
 *.png
 *.jpg
