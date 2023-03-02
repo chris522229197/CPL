@@ -165,7 +165,7 @@ class OxfordPets(DatasetBase):
 
         for i in labels:
             if labellist.count(i) > 1:
-                print("label{},repeat{}times".format(i, l.count(i)))
+                print("label{},repeat{}times".format(i, labellist.count(i)))
 
 
         # shuffle the classes
