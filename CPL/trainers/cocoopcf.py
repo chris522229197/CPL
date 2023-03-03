@@ -13,8 +13,8 @@ from dassl.engine import TRAINER_REGISTRY, TrainerX
 from dassl.metrics import compute_accuracy
 from dassl.utils import load_pretrained_weights, load_checkpoint, read_image
 from dassl.utils.tools import ntransform, xloss_compute
-from clip.utils import build_optimizer, build_lr_scheduler
-from utils *
+from dassl.optim import build_optimizer, build_lr_scheduler
+from utils import *
 
 from clip import clip
 from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
@@ -192,7 +192,7 @@ def cfgen(x, nx, u, y, use_cuda=True):
 
 
 #
-from utils *
+from utils import *
 def init_score_dict(classnames):
     ScoreDict = {}
     
@@ -217,7 +217,7 @@ class CustomCLIP(nn.Module):
         self.dtype = clip_model.dtype
         self.classnames = classnames
         self.vis_dim = clip_model.visual.output_dim
-        # self.ScoreDict = init_score_dict(classnames)    ## generate score dictionary
+        self.ScoreDict = init_score_dict(classnames)    ## generate score dictionary
         # self.ScoreDict = np.load('score.npy', allow_pickle=True).item()
 
 
@@ -340,8 +340,7 @@ class CoCoOpcf(TrainerX):
         Dmodel = self.clip
         optim = self.optim
         scaler = self.scaler
-        
-        ust = solver(Dmodel, image, nimgs, label)
+        ust = solver(Dmodel, image, nimgs, label, self.lab2cname)
         prec = self.cfg.TRAINER.COCOOP.PREC
         if prec == "amp":
             with autocast():
