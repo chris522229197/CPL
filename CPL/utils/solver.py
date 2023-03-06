@@ -110,9 +110,8 @@ def solver(model, image, nimg, label, lab2cname):
                     if int(label[i]) not in ss:
                         u[int(label[i]), S] = 1
                     ss[int(label[i])] = 1
-            torch.save(u.t().repeat(4, 1), f'weights/{dataset}_{args.seed}_{args.opts}_{label[0]}.pth')
-            # Copy 4 times to account for 4 GPUs?
-            return u.t().repeat(4, 1)
+            torch.save(u.t().repeat(1, 1), f'weights/{dataset}_{args.seed}_{args.opts}_{label[0]}.pth')
+            return u.t().repeat(1, 1)
             
 
 
