@@ -342,6 +342,8 @@ class CoCoOpcf(TrainerX):
         scaler = self.scaler
         ust = solver(Dmodel, image, nimgs, label, self.lab2cname)
         prec = self.cfg.TRAINER.COCOOP.PREC
+        ust = ust.to(self.device)
+        nimgs = nimgs.to(self.device)
         if prec == "amp":
             with autocast():
                 loss = model(image, ust, nimgs, label)
