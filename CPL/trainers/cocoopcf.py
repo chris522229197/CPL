@@ -193,7 +193,7 @@ def cfgen(x, nx, u, y, use_cuda=True):
 
 #
 from utils import *
-def init_score_dict(classnames):
+def init_score_dict(classnames, output_dir):
     ScoreDict = {}
     
     list1 = [v for v in classnames for _ in range(len(classnames))]
@@ -202,7 +202,7 @@ def init_score_dict(classnames):
     scorelist = [Flist[i:i + len(classnames)] for i in range(0, len(ref), len(classnames))]
     for index, i in enumerate(classnames):
         ScoreDict[i] = classnames[scorelist[index].topk(2, dim=0)[1][1]]
-    np.save('score.npy', ScoreDict)
+    np.save(osp.join(output_dir, "score.npy"), ScoreDict)
     return ScoreDict
 
 
@@ -217,8 +217,10 @@ class CustomCLIP(nn.Module):
         self.dtype = clip_model.dtype
         self.classnames = classnames
         self.vis_dim = clip_model.visual.output_dim
-        self.ScoreDict = init_score_dict(classnames)    ## generate score dictionary
-        # self.ScoreDict = np.load('score.npy', allow_pickle=True).item()
+        self.ScoreDict = init_score_dict(classnames, cfg.OUTPUT_DIR)    ## generate score dictionary
+        # self.ScoreDict = np.load(
+        #     osp.join(cfg.OUTPUT_DIR, "score.npy"), allow_pickle=True
+        # ).item()
 
 
     def forward(self, image, ustar=None, nimgs=None, label=None):
@@ -313,8 +315,9 @@ class CoCoOpcf(TrainerX):
 
         self.scaler = GradScaler() if cfg.TRAINER.COCOOP.PREC == "amp" else None
 
-
-        self.ScoreDict = np.load('score.npy', allow_pickle=True).item()
+        self.ScoreDict = np.load(
+            osp.join(cfg.OUTPUT_DIR, "score.npy"), allow_pickle=True
+        ).item()
         print(f"Loading score dictionary")
 
 
