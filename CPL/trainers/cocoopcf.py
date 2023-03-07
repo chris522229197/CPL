@@ -217,10 +217,13 @@ class CustomCLIP(nn.Module):
         self.dtype = clip_model.dtype
         self.classnames = classnames
         self.vis_dim = clip_model.visual.output_dim
-        self.ScoreDict = init_score_dict(classnames, cfg.OUTPUT_DIR)    ## generate score dictionary
-        # self.ScoreDict = np.load(
-        #     osp.join(cfg.OUTPUT_DIR, "score.npy"), allow_pickle=True
-        # ).item()
+        if cfg.EVAL_ONLY:
+            # Load score.npy from the trained model.
+            self.ScoreDict = np.load(
+                osp.join(cfg.MODEL_DIR, "score.npy"), allow_pickle=True
+            ).item()
+        else:
+            self.ScoreDict = init_score_dict(classnames, cfg.OUTPUT_DIR)  # generate score dictionary
 
 
     def forward(self, image, ustar=None, nimgs=None, label=None):
@@ -315,8 +318,12 @@ class CoCoOpcf(TrainerX):
 
         self.scaler = GradScaler() if cfg.TRAINER.COCOOP.PREC == "amp" else None
 
+        if cfg.EVAL_ONLY:
+            score_dir = cfg.MODEL_DIR
+        else:
+            score_dir = cfg.OUTPUT_DIR
         self.ScoreDict = np.load(
-            osp.join(cfg.OUTPUT_DIR, "score.npy"), allow_pickle=True
+            osp.join(score_dir, "score.npy"), allow_pickle=True
         ).item()
         print(f"Loading score dictionary")
 
