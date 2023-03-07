@@ -100,7 +100,14 @@ class PromptLearner(nn.Module):
 
 
         self.ctx = nn.Parameter(ctx_vectors)
-        self.u = nn.Parameter(torch.ones(vis_dim, len(classnames)))
+        if cfg.EVAL_ONLY:
+            score = np.load(
+                osp.join(cfg.MODEL_DIR, "score.npy"), allow_pickle=True
+            ).item()
+            u_n_cls = len(score.keys())
+        else:
+            u_n_cls = len(classnames)
+        self.u = nn.Parameter(torch.ones(vis_dim, u_n_cls))
 
         self.meta_net = nn.Sequential(OrderedDict([
             ("linear1", nn.Linear(vis_dim, vis_dim // 16)),
