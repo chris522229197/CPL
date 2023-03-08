@@ -78,6 +78,10 @@ def reset_cfg(cfg, args):
     if args.head:
         cfg.MODEL.HEAD.NAME = args.head
 
+    cfg.EVAL_ONLY = args.eval_only
+    if args.eval_only:
+        cfg.MODEL_DIR = args.model_dir
+
 
 def extend_cfg(cfg):
     """
