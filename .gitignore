@@ -145,3 +145,6 @@ debug.sh
 
 # IDE
 .idea/*
+
+# System
+*.DS_Store
