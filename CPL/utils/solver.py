@@ -49,80 +49,70 @@ def get_next_edit(feat_original, feat_target, label, model, lab2cname, ntext_fea
     return edit, highest_conf
 
 
-def solver(model, image, nimg, label):
+def solver(model, image, nimg, label, lab2cname):
     args, config = set_args()
     dataset = args.root.split('/')[-1]
     if os.path.exists(f'weights/{dataset}_{args.seed}_{args.opts}.pth'): 
         print('load weights')
         return torch.load(f'weights/{dataset}_{args.seed}_{args.opts}.pth')
     else:
-        try:
-            import gdown
-            url = 'https://drive.google.com/file/d/1fTy8Wxg15Xh9_8GMgE7eWHbagUWnNtDp/view?usp=sharing'
-            gdown.download(url, f'preprocessed.zip', quiet=False)
-            with zipfile.ZipFile("preprocessed.zip","r") as zip_ref:
-                print('***** loading and unzipping preporcessed weights *****' )
-                zip_ref.extractall("./weights/")
-                print('\tCompleted!')
-                os.remove('preprocessed.zip')
-            return torch.load(f'weights/{dataset}_{args.seed}_{args.opts}.pth')
-        except:
-            if config.COCOOPCF == "true":
-                u, ep = trained_solver(model, image, nimg, label, args)
-                torch.save(u.t().repeat(4, 1), f'weights/{dataset}_{args.seed}_{args.opts}_{ep}.pth')
-                return u
-            else:
-                dtype = model.dtype
-                logit_scale = model.logit_scale
-                with torch.no_grad():
-                    source_features = model.visual(image.type(dtype)).cuda()
-                    distractor_features = model.visual(nimg.type(dtype).cuda()).cuda()
+        if config.COCOOPCF == "true":
+            u, ep = trained_solver(model, image, nimg, label, args)
+            torch.save(u.t().repeat(4, 1), f'weights/{dataset}_{args.seed}_{args.opts}_{ep}.pth')
+            return u
+        else:
+            dtype = model.dtype
+            logit_scale = model.logit_scale
+            with torch.no_grad():
+                source_features = model.visual(image.type(dtype)).cuda()
+                distractor_features = model.visual(nimg.type(dtype).cuda()).cuda()
 
-                    lab2cname =  np.load('lab2cname.npy', allow_pickle=True).item()       # replace and load the corresponding preprocessed label to classnames dictionary in the root path
-                    ScoreDict = np.load('score.npy', allow_pickle=True).item()
+                # lab2cname =  np.load('lab2cname.npy', allow_pickle=True).item()       # replace and load the corresponding preprocessed label to classnames dictionary in the root path
+                ScoreDict = np.load('score.npy', allow_pickle=True).item()
 
-                    u = -torch.ones(len(lab2cname), model.visual.output_dim)
-                    sm = nn.Softmax()
-                    max_loops = source_features.shape[1]
+                u = -torch.ones(len(lab2cname), model.visual.output_dim)
+                sm = nn.Softmax()
+                max_loops = source_features.shape[1]
 
-                    ss = {}
-                    for i in range(source_features.shape[0]):
-                        S = []
+                ss = {}
+                for i in range(source_features.shape[0]):
+                    S = []
 
 
-                        nclassname = ScoreDict[lab2cname[int(label[i])]]
+                    nclassname = ScoreDict[lab2cname[int(label[i])]]
 
 
-                        ntext = clip.tokenize(nclassname)
-                        model = model.cuda()
-                        ntext_features = model.encode_text(ntext.long().cuda())
+                    ntext = clip.tokenize(nclassname)
+                    model = model.cuda()
+                    ntext_features = model.encode_text(ntext.long().cuda())
 
 
-                        classname = lab2cname[int(label[i])]
+                    classname = lab2cname[int(label[i])]
 
 
-                        text = clip.tokenize(classname)
-                        text_features = model.encode_text(text.long().cuda())
+                    text = clip.tokenize(classname)
+                    text_features = model.encode_text(text.long().cuda())
 
-                        for j in range(max_loops):
-                            
-
-                            edit, conf = get_next_edit(source_features, distractor_features, label, model, lab2cname, ntext_features, logit_scale, i, S)
-                            S.append(edit)
-
-                            source_features[i, edit] = distractor_features[i, edit]
+                    for j in range(max_loops):
 
 
-                            image_features = source_features[i, :]/ source_features[i, :].norm(dim=-1, keepdim=True)  
-                            l_i = float((logit_scale * image_features @ text_features.t()))   
-                            l_i2 = float((logit_scale * image_features @ ntext_features.t()))
+                        edit, conf = get_next_edit(source_features, distractor_features, label, model, lab2cname, ntext_features, logit_scale, i, S)
+                        S.append(edit)
 
-                            if l_i2 > l_i: break
-                        if int(label[i]) not in ss:
-                            u[int(label[i]), S] = 1
-                        ss[int(label[i])] = 1
-                torch.save(u.t().repeat(4, 1), f'weights/{dataset}_{args.seed}_{args.opts}_{label[0]}.pth')
-                return u.t().repeat(4, 1)
+                        source_features[i, edit] = distractor_features[i, edit]
+
+
+                        image_features = source_features[i, :]/ source_features[i, :].norm(dim=-1, keepdim=True)
+                        l_i = float((logit_scale * image_features @ text_features.t()))
+                        l_i2 = float((logit_scale * image_features @ ntext_features.t()))
+
+                        if l_i2 > l_i: break
+                    if int(label[i]) not in ss:
+                        u[int(label[i]), S] = 1
+                    ss[int(label[i])] = 1
+            torch.save(u.t().repeat(4, 1), f'weights/{dataset}_{args.seed}_{args.opts}_{label[0]}.pth')
+            # Copy 4 times to account for 4 GPUs?
+            return u.t().repeat(4, 1)
             
 
 
