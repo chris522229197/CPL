@@ -139,7 +139,7 @@ debug.sh
 *.npy
 *.checkpoint
 */temp/*
-!CPL/scripts/cocoop/*_parallel_seeds.sh
+!CPL/scripts/cocoop/*/*_parallel_seeds.sh
 !CPL/scripts/cpl/*_parallel_seeds.sh
 !CPL/scripts/cpl/*_parallel_lens.sh
 
