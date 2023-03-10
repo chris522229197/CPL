@@ -24,5 +24,6 @@ do
     --load-epoch 10 \
     --eval-only \
     DATASET.NUM_SHOTS "${num_shots}" \
-    DATASET.SUBSAMPLE_CLASSES unseen
+    DATASET.SUBSAMPLE_CLASSES unseen \
+    TEST.EVALUATOR Retrieval
 done

@@ -42,6 +42,7 @@ do
     eval_command+=" --eval-only"
     eval_command+=" DATASET.NUM_SHOTS ${num_shots}"
     eval_command+=" DATASET.SUBSAMPLE_CLASSES unseen"
+    eval_command+=" TEST.EVALUATOR Retrieval"
 
     screen_name+="-${dataset}-${num_shots}shots-${seed}-eval"
     screen -dmS "${screen_name}" bash -c "${eval_command}"
