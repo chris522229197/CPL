@@ -231,6 +231,7 @@ class CustomCLIP(nn.Module):
             ).item()
         else:
             self.ScoreDict = init_score_dict(classnames, cfg.OUTPUT_DIR)  # generate score dictionary
+        self.cfg = cfg
 
 
     def forward(self, image, ustar=None, nimgs=None, label=None):
@@ -249,7 +250,8 @@ class CustomCLIP(nn.Module):
 
         if self.prompt_learner.training:
             logits = []
-            lam = 1 # 0 5 10 
+            # lam = 1 # 0 5 10
+            lam = self.cfg.LAMBDA
             control_scale = 0.07 #1 0.5 0 np.log(1 / 0.07) 
             
 
