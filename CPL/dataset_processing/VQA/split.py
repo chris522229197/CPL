@@ -65,24 +65,24 @@ for i in tqdm(range(len(df_test))):
     test_imnames.append(df_test['img'].tolist()[i])
     test_prompts.append(df_test['question'].tolist()[i].rstrip().lstrip() +' ' + df_test['prompt'].tolist()[i].rstrip().lstrip())
 
-textfile = open("train.txt", "w")
+textfile = open(f"train-{FEW_SHOT}shots.txt", "w")
 for i in range(len(train_imnames)):
     textfile.write(train_imnames[i] + "*" + train_prompts[i] + "\n")
 for i in range(len(test_imnames)):
     textfile.write(test_imnames[i] + "*" + test_prompts[i] + "\n")
 textfile.close()
 
-textfile = open("test.txt", "w")
+textfile = open(f"test-{FEW_SHOT}shots.txt", "w")
 for i in range(len(train_imnames)):
     textfile.write(train_imnames[i] + "*" + train_prompts[i] + "\n")
 for i in range(len(test_imnames)):
     textfile.write(test_imnames[i] + "*" + test_prompts[i] + "\n")
 textfile.close()
 
-textfile = open("val.txt", "w")
+textfile = open(f"val-{FEW_SHOT}shots.txt", "w")
 textfile.close()
 
-textfile = open("classnames.txt", "w")
+textfile = open(f"classnames-{FEW_SHOT}shots.txt", "w")
 for i in range(len(train_prompts)):
     textfile.write(train_prompts[i] + "\n")
 for i in range(len(test_prompts)):
