@@ -139,6 +139,11 @@ debug.sh
 *.npy
 *.checkpoint
 */temp/*
+!CPL/scripts/cocoop/*/*.sh
+!CPL/scripts/cpl/*/*.sh
 
 # IDE
 .idea/*
+
+# System
+*.DS_Store

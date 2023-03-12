@@ -51,14 +51,17 @@ def get_next_edit(feat_original, feat_target, label, model, lab2cname, ntext_fea
 
 def solver(model, image, nimg, label, lab2cname):
     args, config = set_args()
-    dataset = args.root.split('/')[-1]
-    if os.path.exists(f'weights/{dataset}_{args.seed}_{args.opts}.pth'): 
+    dataset = config.DATASET.NAME
+    weight_dir = os.path.join(config.OUTPUT_DIR, "weights")
+    os.makedirs(weight_dir, exist_ok=True)
+
+    if os.path.exists(f"{weight_dir}/{dataset}_{args.seed}_{args.opts}.pth"):
         print('load weights')
-        return torch.load(f'weights/{dataset}_{args.seed}_{args.opts}.pth')
+        return torch.load(f"{weight_dir}/{dataset}_{args.seed}_{args.opts}.pth")
     else:
         if config.COCOOPCF == "true":
             u, ep = trained_solver(model, image, nimg, label, args)
-            torch.save(u.t().repeat(4, 1), f'weights/{dataset}_{args.seed}_{args.opts}_{ep}.pth')
+            torch.save(u.t().repeat(4, 1), f"{weight_dir}/{dataset}_{args.seed}_{args.opts}_{ep}.pth")
             return u
         else:
             dtype = model.dtype
@@ -68,7 +71,9 @@ def solver(model, image, nimg, label, lab2cname):
                 distractor_features = model.visual(nimg.type(dtype).cuda()).cuda()
 
                 # lab2cname =  np.load('lab2cname.npy', allow_pickle=True).item()       # replace and load the corresponding preprocessed label to classnames dictionary in the root path
-                ScoreDict = np.load('score.npy', allow_pickle=True).item()
+                ScoreDict = np.load(
+                    os.path.join(config.OUTPUT_DIR, "score.npy"), allow_pickle=True
+                ).item()
 
                 u = -torch.ones(len(lab2cname), model.visual.output_dim)
                 sm = nn.Softmax()
@@ -110,9 +115,8 @@ def solver(model, image, nimg, label, lab2cname):
                     if int(label[i]) not in ss:
                         u[int(label[i]), S] = 1
                     ss[int(label[i])] = 1
-            torch.save(u.t().repeat(4, 1), f'weights/{dataset}_{args.seed}_{args.opts}_{label[0]}.pth')
-            # Copy 4 times to account for 4 GPUs?
-            return u.t().repeat(4, 1)
+            torch.save(u.t().repeat(1, 1), f"{weight_dir}/{dataset}_{args.seed}_{args.opts}_{label[0]}.pth")
+            return u.t().repeat(1, 1)
             
 
 

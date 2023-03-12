@@ -18,18 +18,21 @@ class vqav2(DatasetBase):
         self.image_dir = os.path.join(self.dataset_dir, "images")
         self.split_fewshot_dir = os.path.join(self.dataset_dir, "split_fewshot")
         mkdir_if_missing(self.split_fewshot_dir)
+        num_shots = cfg.DATASET.NUM_SHOTS
+        txt_file_suffix = f"{num_shots}shots"
 
         classnames = []
-        with open(os.path.join(self.dataset_dir, "classnames.txt"), "r") as f:
+        with open(
+            os.path.join(self.dataset_dir, f"classnames-{txt_file_suffix}.txt"), "r"
+        ) as f:
             lines = f.readlines()
             for line in lines:
                 classnames.append(line.strip())
         cname2lab = {c: i for i, c in enumerate(classnames)}
 
-        train = self.read_data(cname2lab, "train.txt")
-        val = self.read_data(cname2lab, "val.txt")
-        test = self.read_data(cname2lab, "test.txt")
-        num_shots = cfg.DATASET.NUM_SHOTS
+        train = self.read_data(cname2lab, f"train-{txt_file_suffix}.txt")
+        val = self.read_data(cname2lab, f"val-{txt_file_suffix}.txt")
+        test = self.read_data(cname2lab, f"test-{txt_file_suffix}.txt")
 
         if num_shots >= 1:
             seed = cfg.SEED
@@ -48,7 +51,9 @@ class vqav2(DatasetBase):
                 with open(preprocessed, "wb") as file:
                     pickle.dump(data, file, protocol=pickle.HIGHEST_PROTOCOL)
             
-        with open(os.path.join(self.dataset_dir, "test.txt"), "r") as f:
+        with open(
+            os.path.join(self.dataset_dir, f"test-{txt_file_suffix}.txt"), "r"
+        ) as f:
             lines = f.readlines()
             train_shot = (len(lines)) - 1000 
 

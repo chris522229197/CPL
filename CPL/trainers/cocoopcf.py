@@ -100,7 +100,14 @@ class PromptLearner(nn.Module):
 
 
         self.ctx = nn.Parameter(ctx_vectors)
-        self.u = nn.Parameter(torch.ones(vis_dim, len(classnames)))
+        if cfg.EVAL_ONLY:
+            score = np.load(
+                osp.join(cfg.MODEL_DIR, "score.npy"), allow_pickle=True
+            ).item()
+            u_n_cls = len(score.keys())
+        else:
+            u_n_cls = len(classnames)
+        self.u = nn.Parameter(torch.ones(vis_dim, u_n_cls))
 
         self.meta_net = nn.Sequential(OrderedDict([
             ("linear1", nn.Linear(vis_dim, vis_dim // 16)),
@@ -193,7 +200,7 @@ def cfgen(x, nx, u, y, use_cuda=True):
 
 #
 from utils import *
-def init_score_dict(classnames):
+def init_score_dict(classnames, output_dir):
     ScoreDict = {}
     
     list1 = [v for v in classnames for _ in range(len(classnames))]
@@ -202,7 +209,7 @@ def init_score_dict(classnames):
     scorelist = [Flist[i:i + len(classnames)] for i in range(0, len(ref), len(classnames))]
     for index, i in enumerate(classnames):
         ScoreDict[i] = classnames[scorelist[index].topk(2, dim=0)[1][1]]
-    np.save('score.npy', ScoreDict)
+    np.save(osp.join(output_dir, "score.npy"), ScoreDict)
     return ScoreDict
 
 
@@ -217,8 +224,14 @@ class CustomCLIP(nn.Module):
         self.dtype = clip_model.dtype
         self.classnames = classnames
         self.vis_dim = clip_model.visual.output_dim
-        self.ScoreDict = init_score_dict(classnames)    ## generate score dictionary
-        # self.ScoreDict = np.load('score.npy', allow_pickle=True).item()
+        if cfg.EVAL_ONLY:
+            # Load score.npy from the trained model.
+            self.ScoreDict = np.load(
+                osp.join(cfg.MODEL_DIR, "score.npy"), allow_pickle=True
+            ).item()
+        else:
+            self.ScoreDict = init_score_dict(classnames, cfg.OUTPUT_DIR)  # generate score dictionary
+        self.cfg = cfg
 
 
     def forward(self, image, ustar=None, nimgs=None, label=None):
@@ -237,7 +250,8 @@ class CustomCLIP(nn.Module):
 
         if self.prompt_learner.training:
             logits = []
-            lam = 1 # 0 5 10 
+            # lam = 1 # 0 5 10
+            lam = self.cfg.LAMBDA
             control_scale = 0.07 #1 0.5 0 np.log(1 / 0.07) 
             
 
@@ -313,8 +327,13 @@ class CoCoOpcf(TrainerX):
 
         self.scaler = GradScaler() if cfg.TRAINER.COCOOP.PREC == "amp" else None
 
-
-        self.ScoreDict = np.load('score.npy', allow_pickle=True).item()
+        if cfg.EVAL_ONLY:
+            score_dir = cfg.MODEL_DIR
+        else:
+            score_dir = cfg.OUTPUT_DIR
+        self.ScoreDict = np.load(
+            osp.join(score_dir, "score.npy"), allow_pickle=True
+        ).item()
         print(f"Loading score dictionary")
 
 
@@ -342,6 +361,8 @@ class CoCoOpcf(TrainerX):
         scaler = self.scaler
         ust = solver(Dmodel, image, nimgs, label, self.lab2cname)
         prec = self.cfg.TRAINER.COCOOP.PREC
+        ust = ust.to(self.device)
+        nimgs = nimgs.to(self.device)
         if prec == "amp":
             with autocast():
                 loss = model(image, ust, nimgs, label)
